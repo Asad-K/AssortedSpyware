@@ -5,7 +5,7 @@ class HttpServer(BaseHTTPRequestHandler):
     """
     basic http server strapped together
     """
-    LOG_FILE: str = "LOG.json"  # log file path
+    LOG_FILE: str = "LOG.txt"  # log file path
 
     def _set_headers(self):
         self.send_response(200)
