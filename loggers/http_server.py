@@ -3,9 +3,9 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 class HttpServer(BaseHTTPRequestHandler):
     """
-    basic http server strapped together
+    basic http server duck taped together
     """
-    LOG_FILE: str = "LOG.txt"  # log file path
+    LOG_FILE: str = "LOG.json"  # log file path
 
     def _set_headers(self):
         self.send_response(200)
@@ -16,8 +16,8 @@ class HttpServer(BaseHTTPRequestHandler):
         self._set_headers()
         try:
             self.wfile.write(open(self.LOG_FILE, "r").read().encode())
-        except FileNotFoundError:
-            self.wfile.write(b"{}")
+        except Exception as e:
+            self.wfile.write(b'{"exception": ' + str(e).encode() + b'}')
 
     def do_HEAD(self):
         self._set_headers()

