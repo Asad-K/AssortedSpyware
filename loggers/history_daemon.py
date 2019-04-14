@@ -28,10 +28,10 @@ class HistoryDaemon:
         - A time might not be found (in the case of bookmarks) which will result in the default being recorded
          1601-01-01 00:00:00
     """
-    __epoch: datetime = datetime(1601, 1, 1)
-    __default_db_path: str = os.getenv("APPDATA") + "\\..\\Local\\Google\\Chrome\\User Data\\Default\\history"
-    __statement: str = "select url, title, visit_count, last_visit_time from urls"
-    __temp_name: str = "db_cpy.db"
+    __EPOCH: datetime = datetime(1601, 1, 1)
+    __DEFAULT_DB_PATH: str = os.getenv("APPDATA") + "\\..\\Local\\Google\\Chrome\\User Data\\Default\\history"
+    __SQL_STATEMENT: str = "select url, title, visit_count, last_visit_time from urls"
+    __TEMP_NAME: str = "db_cpy.db"
 
     def __init__(self):
         self.history = list()
@@ -61,11 +61,11 @@ class HistoryDaemon:
         have their view count amended and the date accessed appended
         """
         try:
-            retrieved_history = self.__get_history(self.__default_db_path)
+            retrieved_history = self.__get_history(self.__DEFAULT_DB_PATH)
         except sqlite3.OperationalError:  # database locked
             temp_dir = tempfile.TemporaryDirectory()
-            temp_path = f"{temp_dir.name}\\{self.__temp_name}"
-            shutil.copy(self.__default_db_path, temp_path)
+            temp_path = f"{temp_dir.name}\\{self.__TEMP_NAME}"
+            shutil.copy(self.__DEFAULT_DB_PATH, temp_path)
             retrieved_history = self.__get_history(temp_path)
             temp_dir.cleanup()  # cleanup temp dir
 
@@ -73,7 +73,7 @@ class HistoryDaemon:
             for entry in self.history:
                 if row[0] == entry["url"]:
                     entry["visit count"] = int(row[2])  # can cause inaccuracies, logic needs amending
-                    date = str(self.__epoch + timedelta(microseconds=row[3]))
+                    date = str(self.__EPOCH + timedelta(microseconds=row[3]))
                     if date not in entry["date(GMT)"]:  # checks if date is already entry
                         entry["date(GMT)"].append(date)
                     break
@@ -82,7 +82,7 @@ class HistoryDaemon:
                 dict_["url"] = row[0]
                 dict_["title"] = row[1]
                 dict_["visit count"] = int(row[2])
-                dict_["date(GMT)"] = [str(self.__epoch + timedelta(microseconds=row[3]))]
+                dict_["date(GMT)"] = [str(self.__EPOCH + timedelta(microseconds=row[3]))]
                 self.history.append(dict_)
 
     def __get_db_hash(self) -> str:
@@ -93,7 +93,7 @@ class HistoryDaemon:
         :return: md checksum
         """
         hash_md5 = hashlib.md5()
-        with open(self.__default_db_path, "rb") as f:
+        with open(self.__DEFAULT_DB_PATH, "rb") as f:
             for chunk in iter(lambda: f.read(4096), b""):
                 hash_md5.update(chunk)
         return hash_md5.hexdigest()
