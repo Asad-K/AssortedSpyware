@@ -1,3 +1,4 @@
+import json
 import sqlite3
 import os
 import hashlib
@@ -28,13 +29,18 @@ class HistoryDaemon:
         - A time might not be found (in the case of bookmarks) which will result in the default being recorded
          1601-01-01 00:00:00
     """
+    __LOG: str = "History_log.json"
     __EPOCH: datetime = datetime(1601, 1, 1)
     __DEFAULT_DB_PATH: str = os.getenv("APPDATA") + "\\..\\Local\\Google\\Chrome\\User Data\\Default\\history"
     __SQL_STATEMENT: str = "select url, title, visit_count, last_visit_time from urls"
     __TEMP_NAME: str = "db_cpy.db"
 
     def __init__(self):
-        self.history = list()
+        try:
+            self.history = self.__load_history()
+        except (FileNotFoundError, json.decoder.JSONDecodeError):
+            self.history = list()
+
         self.__update_history()  # initial history update
 
     @staticmethod
@@ -84,6 +90,7 @@ class HistoryDaemon:
                 dict_["visit count"] = int(row[2])
                 dict_["date(GMT)"] = [str(self.__EPOCH + timedelta(microseconds=row[3]))]
                 self.history.append(dict_)
+        self.__dump_history()
 
     def __get_db_hash(self) -> str:
         """
@@ -97,6 +104,21 @@ class HistoryDaemon:
             for chunk in iter(lambda: f.read(4096), b""):
                 hash_md5.update(chunk)
         return hash_md5.hexdigest()
+
+    def __load_history(self) -> list:
+        """
+        Reads and loads log file into class
+
+        :rtype list
+        :return: history
+        """
+        return json.load(open(self.__LOG, "r"))
+
+    def __dump_history(self):
+        """
+        Dumps lof into log file
+        """
+        json.dump(self.history, open(self.__LOG, "w"))
 
     def watch(self, delay: int = 1):
         """
