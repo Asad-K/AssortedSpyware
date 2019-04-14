@@ -18,6 +18,7 @@ class HistoryDaemon:
     Helps resist against history deletion/modification
 
     Considerations:
+        - Doesnt work for incognito as history is never written to disk
         - Hard to predict when chrome will write most recent history to database
         (generally takes a few seconds)
         - If chrome is open a copy will almost always have to be made for the
@@ -51,12 +52,12 @@ class HistoryDaemon:
 
     def __update_history(self):
         """
-        Attempts to access ordinal history db from chrome directory
+        Attempts to access original history db from chrome directory
         if fails a copy is made into a temp directory and the copy is
         read instead.
 
         The rows are stored into a dict, any existing urls
-        have there view count amended and the date accessed appended
+        have their view count amended and the date accessed appended
         """
         try:
             retrieved_history = self.__get_history(self.default_db_path)
